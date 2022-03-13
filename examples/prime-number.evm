@@ -1,3 +1,6 @@
+# you can run the code using following as well
+# evm-run https://raw.githubusercontent.com/zemse/evm-run/main/examples/prime-number.evm --value 3
+
 # psuedo code
 # function isPrimeNumber(value) {
 #     i = value

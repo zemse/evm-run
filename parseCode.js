@@ -1,13 +1,19 @@
 const fs = require("fs-extra");
 const { BN } = require("ethereumjs-util");
+const axios = require("axios");
 
 // returns evm code in hex
-function parseCode(code, opcodeList) {
+async function parseCode(code, opcodeList) {
   if (typeof code === "number") {
     if (code + 1 === code) throw new Error("Please use --code to pass code");
     code = String(code);
     if (code.length % 2 !== 0) code = "0" + code;
   }
+
+  if (typeof code === "string" && code.includes("http")) {
+    code = await axios.get(code).then((res) => res.data);
+  }
+
   // .map((entry) => [entry[1].fullName, entry[0]])
   // reading file if a path is provided
   if (code.slice(0, 2) === "0x") code = code.slice(2);
