@@ -10,16 +10,17 @@ async function parseCode(code, opcodeList) {
     if (code.length % 2 !== 0) code = "0" + code;
   }
 
-  if (typeof code === "string" && code.includes("http")) {
+  if (typeof code === "string" && code.slice(0, 4) === "http") {
+    // reading code if url is provided
     code = await axios.get(code).then((res) => res.data);
+  } else if (code.length < 100 && fs.existsSync(code)) {
+    // reading file if a path is provided
+    code = fs.readFileSync(code, "utf8");
   }
 
   // .map((entry) => [entry[1].fullName, entry[0]])
-  // reading file if a path is provided
   if (code.slice(0, 2) === "0x") code = code.slice(2);
-  if (code.includes(".")) {
-    code = fs.readFileSync(code, "utf8");
-  }
+
   // removing comments
   code = code
     // remove all occurences of 0x
