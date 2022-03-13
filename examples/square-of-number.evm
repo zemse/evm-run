@@ -1,0 +1,8 @@
+CALLVALUE // taking square of 3
+DUP1
+MUL
+PUSH1 0 // pushes 0
+MSTORE
+MSIZE // pushes 20
+PUSH1 0 // pushes 0
+RETURN

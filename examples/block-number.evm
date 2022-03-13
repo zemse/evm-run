@@ -1,0 +1,8 @@
+# https://twitter.com/the_ethernaut/status/1500517228973899795?s=20&t=hldBTWkdmKw8Q4JvLfMjhA
+# This code returns the current block number when called
+number
+push1 0
+mstore
+push1 20
+push1 0
+return

@@ -1,0 +1,20 @@
+// Create an account with 0 wei and no code
+PUSH1 0
+PUSH1 0
+PUSH1 0
+CREATE
+
+// Create an account with 9 wei and no code
+PUSH1 0
+PUSH1 0
+PUSH1 9
+CREATE
+
+// Create an account with 0 wei and 4 FF as code
+PUSH13 0x63FFFFFFFF60005260046000F3
+PUSH1 0
+MSTORE
+PUSH1 0t13
+PUSH1 0
+PUSH1 0
+CREATE 

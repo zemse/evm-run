@@ -1,0 +1,23 @@
+// STEP 1: Perform the addition
+// pushes 2 on the stack
+push1 2
+// pushes 3 on the stack
+push1 3
+// pops two element from the stack, i.e. 2 and 3 that we previously pushed. and
+// this opcode pushes the result on the stack, i.e. 5
+add
+
+// STEP2: Store in memory
+// we already have the result on the stack, let us push memory location
+push1 0 
+// now let us store the addition result at memory location 0
+mstore
+
+// STEP3: Return the result
+// the return opcode takes offset and length parameters
+push1 20 // length
+push1 0 // offset
+return
+
+// halts execution
+stop

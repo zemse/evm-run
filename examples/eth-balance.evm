@@ -1,0 +1,14 @@
+// ./cli.js examples/eth-balance.evm --data d8dA6BF26964aF9D7eEd9e03E53415D37aA96045 --rpc https://eth-mainnet.alchemyapi.io/v2/<API_KEY> 
+
+calldatasize
+returndatasize // push 0
+push1 0t12
+calldatacopy
+returndatasize
+mload
+balance
+RETURNDATASIZE // pushes 0
+MSTORE 
+MSIZE // pushes 0x20
+RETURNDATASIZE // pushes 0
+RETURN

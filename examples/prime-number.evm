@@ -1,0 +1,47 @@
+# psuedo code
+# function isPrimeNumber(value) {
+#     i = value
+#     while(i != 1) {
+#         i--
+#         if(value % i == 0) {
+#             return false
+#         }
+#     }
+#     return true
+# }
+
+callvalue // initializing i with callvalue
+jumpdest // location 1, while loop
+chainid // push 1
+swap1
+sub // i--
+dup1
+chainid // push 1
+eq // if i == 1 then break the loop
+push1 0t25 // todo change
+jumpi // jump to success
+dup1
+callvalue
+mod // value % i
+iszero 
+chainid
+xor
+chainid // push 1, while loop start location
+jumpi // jump if i != 1
+returndatasize // push 0
+returndatasize // push 0
+mstore // store false in memory first slot
+push1 0t29 // jump to failure
+jump // jump to return location
+jumpdest // destination success
+chainid // push 1
+returndatasize // push 0
+mstore // store true in memory first slot
+jumpdest // destination failure
+push1 20
+returndatasize
+return
+stop
+
+
+

@@ -1,0 +1,7 @@
+// credits https://twitter.com/lightclients/status/1500571415900090372?s=20&t=O0JzQHYDwRLlDRP-BXrjTw
+NUMBER
+RETURNDATASIZE // pushes 0
+MSTORE 
+MSIZE // pushes 20
+RETURNDATASIZE // pushes 0
+RETURN
