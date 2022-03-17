@@ -3,6 +3,7 @@ const { BN } = require("ethereumjs-util");
 const { getOpcodesForHF } = require("@ethereumjs/vm/dist/evm/opcodes");
 const { parseCode } = require("./parseCode");
 const { getVM } = require("./vm");
+const { ethers } = require("ethers");
 
 var argv = require("minimist")(process.argv.slice(2), {
   string: ["code"],
@@ -69,7 +70,16 @@ async function main() {
     ),
   })
     .then((results) => {
-      console.log(`Returned: ${results.returnValue.toString("hex")}`);
+      let returnHex = results.returnValue.toString("hex");
+      let returnParsedStr;
+      try {
+        returnParsedStr = ethers.utils.toUtf8String("0x" + returnHex);
+      } catch {}
+      console.log(
+        `Returned: ${
+          returnParsedStr ? `"${returnParsedStr}" ` : ""
+        }${returnHex}`
+      );
       console.log(`gasUsed : ${results.gasUsed.toString()}`);
     })
     .catch(console.error);
