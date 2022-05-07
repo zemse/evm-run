@@ -18,7 +18,7 @@ const vm = getVM(
   argv.chain ?? "mainnet",
   argv.hardfork ?? "arrowGlacier",
   argv.activatePrecompiles ?? true,
-  argv.rpc === true
+  argv.rpc === "mainnet"
     ? "https://eth-mainnet.alchemyapi.io/v2/BlFofLhaR2b18O08NFxUKPdBjHjRCj4P"
     : argv.rpc,
   argv.forkBlockNumber
