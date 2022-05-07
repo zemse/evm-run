@@ -29,7 +29,7 @@ function getVM(
     const httpProvider = new HttpProvider(mainnetForkRpc);
     // last arg is disk cache path
     const forkBlockNumberBN = new BN(forkBlockNumber);
-    console.log(`Fork block number: ${forkBlockNumberBN.toString(10)}`);
+    console.log(`forkBlockNumber: ${forkBlockNumberBN.toString(10)}`);
     const rpc = new JsonRpcClient(httpProvider, 1, forkBlockNumberBN, 2);
     vmOptions.blockchain = new ForkBlockchain(rpc, forkBlockNumberBN, common);
     vmOptions.stateManager = new ForkStateManager(rpc, forkBlockNumberBN);
