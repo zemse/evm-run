@@ -10,11 +10,11 @@
     "evm-run": "./cli.js"
   },
   "dependencies": {
-    "@ethereumjs/vm": "^5.7.1",
+    "@ethereumjs/vm": "^5.9.0",
     "axios": "^0.26.1",
-    "ethers": "^5.6.1",
+    "ethers": "^5.6.5",
     "fs-extra": "^10.0.1",
-    "hardhat": "^2.9.1",
+    "hardhat": "^2.9.3",
     "minimist": "^1.2.5"
   }
 }

@@ -11,7 +11,13 @@ const ForkBlockchain =
 const ForkStateManager =
   require("hardhat/internal/hardhat-network/provider/fork/ForkStateManager").ForkStateManager;
 
-function getVM(chain, hardfork, activatePrecompiles, mainnetForkRpc) {
+function getVM(
+  chain,
+  hardfork,
+  activatePrecompiles,
+  mainnetForkRpc,
+  forkBlockNumber = 14379250
+) {
   const common = new Common({ chain, hardfork });
 
   const vmOptions = {
@@ -20,14 +26,13 @@ function getVM(chain, hardfork, activatePrecompiles, mainnetForkRpc) {
   };
 
   if (mainnetForkRpc) {
-    const httpProvider = new HttpProvider(
-      mainnetForkRpc // "https://eth-mainnet.alchemyapi.io/v2/BlFofLhaR2b18O08NFxUKPdBjHjRCj4P"
-    );
+    const httpProvider = new HttpProvider(mainnetForkRpc);
     // last arg is disk cache path
-    const forkBlockNumber = new BN(14379250);
-    const rpc = new JsonRpcClient(httpProvider, 1, forkBlockNumber, 2);
-    vmOptions.blockchain = new ForkBlockchain(rpc, forkBlockNumber, common);
-    vmOptions.stateManager = new ForkStateManager(rpc, forkBlockNumber);
+    const forkBlockNumberBN = new BN(forkBlockNumber);
+    console.log(`Fork block number: ${forkBlockNumberBN.toString(10)}`);
+    const rpc = new JsonRpcClient(httpProvider, 1, forkBlockNumberBN, 2);
+    vmOptions.blockchain = new ForkBlockchain(rpc, forkBlockNumberBN, common);
+    vmOptions.stateManager = new ForkStateManager(rpc, forkBlockNumberBN);
   }
 
   return new VM(vmOptions);

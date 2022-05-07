@@ -1,9 +1,9 @@
 #! /usr/bin/env node
 const { BN } = require("ethereumjs-util");
-const { getOpcodesForHF } = require("@ethereumjs/vm/dist/evm/opcodes");
 const { parseCode } = require("./parseCode");
 const { getVM } = require("./vm");
 const { ethers } = require("ethers");
+const { getOpcodeList } = require("./opcodes");
 
 var argv = require("minimist")(process.argv.slice(2), {
   string: ["code"],
@@ -16,14 +16,15 @@ if (!code) throw new Error("No code provided");
 
 const vm = getVM(
   argv.chain ?? "mainnet",
-  argv.hardfork ?? "berlin",
+  argv.hardfork ?? "arrowGlacier",
   argv.activatePrecompiles ?? true,
-  argv.rpc
+  argv.rpc === true
+    ? "https://eth-mainnet.alchemyapi.io/v2/BlFofLhaR2b18O08NFxUKPdBjHjRCj4P"
+    : argv.rpc,
+  argv.forkBlockNumber
 );
 
-const opcodeList = Array.from(getOpcodesForHF(vm._common).values())
-  .map((entry) => [entry.fullName, entry.code.toString(16)])
-  .sort((entry1, entry2) => (entry1[0].length > entry2[0].length ? -1 : 1));
+const opcodeList = getOpcodeList(vm._common);
 
 async function main() {
   const codeBuff = Buffer.from(await parseCode(code, opcodeList), "hex");
@@ -42,9 +43,10 @@ async function main() {
     displayOpcodeMaxLength = Math.max(displayOpcodeMaxLength, display.length);
     if (data.stack.length) {
       display += " ".repeat(displayOpcodeMaxLength - display.length + 1);
-      display += `Stack: ${data.stack.map((val) =>
-        val.toString(16).toUpperCase()
-      )}`;
+      display += `Stack: ${data.stack
+        .map((val) => val.toString(16).toUpperCase())
+        .slice()
+        .reverse()}`;
     }
     displayStackMaxLength = Math.max(displayStackMaxLength, display.length);
     if (data.memory.length) {
@@ -75,12 +77,24 @@ async function main() {
       try {
         returnParsedStr = ethers.utils.toUtf8String("0x" + returnHex);
       } catch {}
+      const printableLength = returnParsedStr
+        .split("")
+        .filter((val) =>
+          val.match(/^[a-z0-9!"#$%&'()*+,.\/:;<=>?@\[\] ^_`{|}~-]*$/i)
+        )
+        .join("").length;
       console.log(
         `Returned: ${
-          returnParsedStr ? `"${returnParsedStr}" ` : ""
+          printableLength > 0 ? `"${returnParsedStr}" ` : ""
         }${returnHex}`
       );
       console.log(`gasUsed : ${results.gasUsed.toString()}`);
+      if (results.exceptionError) {
+        console.log(
+          results.exceptionError.errorType,
+          results.exceptionError.error
+        );
+      }
     })
     .catch(console.error);
 }

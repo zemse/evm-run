@@ -1,10 +1,12 @@
 const fs = require("fs-extra");
 const { BN } = require("ethereumjs-util");
 const axios = require("axios");
+const { defaultOpcodeList } = require("./opcodes");
 
 // returns evm code in hex
-async function parseCode(code, opcodeList) {
+async function parseCode(code, opcodeList = defaultOpcodeList) {
   if (typeof code === "number") {
+    // sometimes the code gets parsed as infinity
     if (code + 1 === code) throw new Error("Please use --code to pass code");
     code = String(code);
     if (code.length % 2 !== 0) code = "0" + code;
