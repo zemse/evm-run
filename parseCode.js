@@ -23,6 +23,11 @@ async function parseCode(code, opcodeList = defaultOpcodeList) {
   // .map((entry) => [entry[1].fullName, entry[0]])
   if (code.slice(0, 2) === "0x") code = code.slice(2);
 
+  if (String.prototype.replaceAll === undefined) {
+    throw new Error(
+      "Please upgrade your nodejs version to support String.prototype.replaceAll"
+    );
+  }
   // removing comments
   code = code
     // remove all occurences of 0x
@@ -30,10 +35,9 @@ async function parseCode(code, opcodeList = defaultOpcodeList) {
     .join("")
     .split("0X")
     .join("")
+    // removes strings between /* and */, strings between // and \n and strings between # and \n
+    .replaceAll(/\/\*[\s\S]*?\*\/|\/\/.*|\#.*/g, "")
     .split("\n")
-    .map((line) => line.split("//")[0])
-    .map((line) => line.split("#")[0])
-    .filter((line) => !!line)
     .map((line) =>
       line
         .split(" ")
