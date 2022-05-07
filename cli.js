@@ -77,12 +77,15 @@ async function main() {
       try {
         returnParsedStr = ethers.utils.toUtf8String("0x" + returnHex);
       } catch {}
-      const printableLength = returnParsedStr
-        .split("")
-        .filter((val) =>
-          val.match(/^[a-z0-9!"#$%&'()*+,.\/:;<=>?@\[\] ^_`{|}~-]*$/i)
-        )
-        .join("").length;
+      const printableLength =
+        typeof returnParsedStr === "string"
+          ? returnParsedStr
+              .split("")
+              .filter((val) =>
+                val.match(/^[a-z0-9!"#$%&'()*+,.\/:;<=>?@\[\] ^_`{|}~-]*$/i)
+              )
+              .join("").length
+          : 0;
       console.log(
         `Returned: ${
           printableLength > 0 ? `"${returnParsedStr}" ` : ""
