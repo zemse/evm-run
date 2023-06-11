@@ -1,9 +1,8 @@
 #! /usr/bin/env node
-const { BN } = require("ethereumjs-util");
 const { parseCode } = require("./parseCode");
 const { getVM } = require("./vm");
 const { ethers } = require("ethers");
-const { getOpcodeList } = require("./opcodes");
+const { getOpcodeList, defaultChain, defaultHardfork } = require("./opcodes");
 
 var argv = require("minimist")(process.argv.slice(2), {
   string: ["code"],
@@ -15,8 +14,8 @@ const code = argv.code ?? argv._[0];
 if (!code) throw new Error("No code provided");
 
 const vm = getVM(
-  argv.chain ?? "mainnet",
-  argv.hardfork ?? "arrowGlacier",
+  argv.chain ?? defaultChain,
+  argv.hardfork ?? defaultHardfork,
   argv.activatePrecompiles ?? true,
   argv.rpc === "mainnet"
     ? "https://eth-mainnet.alchemyapi.io/v2/BlFofLhaR2b18O08NFxUKPdBjHjRCj4P"
@@ -36,7 +35,8 @@ async function main() {
 
   let displayOpcodeMaxLength = 0;
   let displayStackMaxLength = 0;
-  vm.on("step", function (data) {
+
+  vm.evm.events.on("step", function (data) {
     // console.log(data)
     let opcode = opcodeList.find((entry) => entry[0] === data.opcode.name)[1];
     let display = `${opcode} ${data.opcode.name}`;
@@ -62,15 +62,16 @@ async function main() {
     argv.data = argv.data.slice(2);
   }
 
-  vm.runCode({
-    code: Buffer.from(codeBuff, "hex"),
-    gasLimit: new BN(argv.gasLimit ?? 0xffff),
-    value: new BN(argv.value ?? 0x0),
-    data: Buffer.from(
-      (argv.data === true ? "" : String(argv.data)) ?? "0x",
-      "hex"
-    ),
-  })
+  vm.evm
+    .runCode({
+      code: Buffer.from(codeBuff, "hex"),
+      gasLimit: BigInt(argv.gasLimit ?? 0xffff),
+      value: BigInt(argv.value ?? 0x0),
+      data: Buffer.from(
+        (argv.data === true ? "" : String(argv.data)) ?? "0x",
+        "hex"
+      ),
+    })
     .then((results) => {
       let returnHex = results.returnValue.toString("hex");
       let returnParsedStr;
@@ -87,11 +88,11 @@ async function main() {
               .join("").length
           : 0;
       console.log(
-        `Returned: ${
+        `return: ${
           printableLength > 0 ? `"${returnParsedStr}" ` : ""
         }${returnHex}`
       );
-      console.log(`gasUsed : ${results.gasUsed.toString()}`);
+      console.log(`gasUsed: ${results.executionGasUsed?.toString()}`);
       if (results.exceptionError) {
         console.log(
           results.exceptionError.errorType,

@@ -1,5 +1,5 @@
-const Common = require("@ethereumjs/common").default;
-const VM = require("@ethereumjs/vm").default;
+const { Common } = require("@ethereumjs/common");
+const { VM } = require("@ethereumjs/vm");
 const { BN } = require("ethereumjs-util");
 
 const HttpProvider =
