@@ -53,7 +53,7 @@ async function main() {
       display += " ".repeat(displayStackMaxLength - display.length + 1);
       display += `Memory: ${data.memory.toString("hex")}`;
     }
-
+    display += `\tGasLeft: ${data.gasLeft.toString(10)}`;
     console.log(display);
   });
 
