@@ -1,0 +1,13 @@
+JUMPDEST
+JUMPDEST
+# return size and offset
+PUSH1 0x20 PUSH0
+# input size and offset
+PUSH2 0x6b40 PUSH0
+# precompile address
+PUSH1 2
+GAS
+STATICCALL
+# above also writes to first mem word
+# jump to PC = 1
+JUMP
