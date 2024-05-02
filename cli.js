@@ -5,8 +5,9 @@ const { ethers } = require("ethers");
 const { getOpcodeList, defaultChain, defaultHardfork } = require("./opcodes");
 
 var argv = require("minimist")(process.argv.slice(2), {
-  string: ["code"],
-  boolean: ["activatePrecompiles"],
+  string: ["code", "chain", "hardfork", "rpc"],
+  boolean: ["activatePrecompiles", "memory"],
+  number: ["forkBlockNumber"],
 });
 
 const code = argv.code ?? argv._[0];
@@ -46,10 +47,11 @@ async function main() {
       display += `Stack: ${data.stack
         .map((val) => val.toString(16).toUpperCase())
         .slice()
-        .reverse()}`;
+        .reverse()
+        .slice(0, 16)}`;
     }
     displayStackMaxLength = Math.max(displayStackMaxLength, display.length);
-    if (data.memory.length) {
+    if (argv.memory && data.memory.length) {
       display += " ".repeat(displayStackMaxLength - display.length + 1);
       display += `Memory: ${data.memory.toString("hex")}`;
     }
