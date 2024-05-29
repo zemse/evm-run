@@ -1,0 +1,17 @@
+[package]
+name = "evm-run"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies]
+revm = { version = "9.0.0", features = [
+    "ethersdb",
+    "optional_eip3607",
+    "std",
+    "serde-json",
+] }
+anyhow = "1.0.83"
+tokio = { version = "1.37", features = ["rt-multi-thread", "macros"] }
+ethers-providers = { version = "2.0" }
+clap = { version = "4.5.4", features = ["derive"] }
