@@ -30,7 +30,8 @@ where
         })
     } else if let Some(code) = &args.code {
         let dummy_address = address!("1234567812345678123456781234567812345678");
-        let code = code.clone().into_inner();
+        let code = crate::code::parse(code);
+        println!("code: {:?}\n", code);
         evm.modify_db(|db| {
             db.insert_account_info(
                 dummy_address,
@@ -58,7 +59,7 @@ where
             tx.caller = *from;
         }
         if let Some(calldata) = &args.calldata {
-            tx.data = calldata.clone().into_inner();
+            tx.data = crate::code::parse(calldata);
         }
         if let Some(value) = &args.value {
             tx.value = *value;

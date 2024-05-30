@@ -1,5 +1,5 @@
-mod bytes_wrapper;
 mod cli;
+mod code;
 mod evm;
 mod inspector;
 mod stack_fmt;
