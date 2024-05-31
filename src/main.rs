@@ -21,10 +21,23 @@ async fn main() -> Result<()> {
         args.code = Some(code_positional.clone());
     }
 
-    if let Some(rpc) = &args.rpc {
+    if args.block.is_some() && args.code.is_none() && args.to.is_none() {
+        if args.rpc.is_none() {
+            println!("Please provide an RPC endpoint to fetch the block data!");
+            std::process::exit(1);
+        }
+        let client = Provider::<Http>::try_from(args.rpc.clone().unwrap())?;
+        let client = Arc::new(client);
+        let db: CacheDB<EthersDB<Provider<Http>>> = CacheDB::new(
+            EthersDB::new(Arc::clone(&client), args.block.map(|n| (n - 1).into())).unwrap(),
+        );
+        println!("running block");
+        evm::run_block(db, args.block.unwrap(), &args).await;
+    } else if let Some(rpc) = &args.rpc {
         let client = Provider::<Http>::try_from(rpc)?;
         let client = Arc::new(client);
-        let db = CacheDB::new(EthersDB::new(Arc::clone(&client), None).unwrap());
+        let db: CacheDB<EthersDB<Provider<Http>>> =
+            CacheDB::new(EthersDB::new(Arc::clone(&client), args.block.map(|b| b.into())).unwrap());
         evm::run(db, &args)?;
     } else {
         let db = CacheDB::new(EmptyDB::new());

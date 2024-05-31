@@ -1,11 +1,16 @@
 use crate::{cli, inspector::CustomTracer};
+use alloy_provider::{Provider as ProviderTrait, ProviderBuilder};
+use ethers_providers::{Http, Provider};
 use revm::{
-    db::CacheDB,
+    db::{CacheDB, EthersDB},
     inspector_handle_register,
-    primitives::{address, keccak256, AccountInfo, ExecutionResult, TransactTo, U256},
+    primitives::{
+        address, calc_blob_gasprice, keccak256, AccountInfo, BlobExcessGasAndPrice, BlockEnv,
+        ExecutionResult, TransactTo, TxEnv, U256,
+    },
     Evm,
 };
-use std::result::Result;
+use std::{collections::HashMap, result::Result, str::FromStr};
 
 pub fn run<DB>(db: CacheDB<DB>, args: &cli::Args) -> Result<(), anyhow::Error>
 where
@@ -99,8 +104,91 @@ where
         .unwrap();
 
     let result = evm.transact_commit().unwrap();
+
     print_exec_result(result, initial_gas_spend);
     Ok(())
+}
+
+pub async fn run_block(
+    mut db: CacheDB<EthersDB<Provider<Http>>>,
+    block_num: u64,
+    args: &cli::Args,
+) {
+    let provider =
+        ProviderBuilder::new().on_http(reqwest::Url::from_str(&args.rpc.clone().unwrap()).unwrap());
+
+    let block = provider
+        .get_block(block_num.into(), true)
+        .await
+        .unwrap()
+        .expect("block not found");
+
+    let block_env = BlockEnv {
+        number: U256::from(block.header.number.unwrap_or_default()),
+        coinbase: block.header.miner,
+        timestamp: U256::from(block.header.timestamp),
+        gas_limit: U256::from(block.header.gas_limit),
+        basefee: U256::from(block.header.base_fee_per_gas.unwrap_or_default()),
+        difficulty: block.header.difficulty,
+        prevrandao: Some(block.header.difficulty.to_be_bytes::<32>().into()),
+        blob_excess_gas_and_price: block.header.excess_blob_gas.map(|excess_blob_gas| {
+            let excess_blob_gas = excess_blob_gas as u64;
+            BlobExcessGasAndPrice {
+                excess_blob_gas,
+                blob_gasprice: calc_blob_gasprice(excess_blob_gas),
+            }
+        }),
+    };
+
+    for tx in block.transactions.as_transactions().unwrap() {
+        println!("running tx {:?}", tx);
+        let mut evm = Evm::builder()
+            // .modify_cfg_env(|f| f.disable_eip3607 = true)
+            .with_db(db)
+            .with_external_context(CustomTracer::default()) // TODO change
+            .append_handler_register(inspector_handle_register)
+            .with_block_env(block_env.clone())
+            .with_tx_env(TxEnv {
+                caller: tx.from,
+                gas_limit: tx.gas as u64,
+                gas_price: U256::from(tx.gas_price.unwrap_or_default()),
+                transact_to: match tx.to {
+                    Some(addr) => TransactTo::Call(addr),
+                    None => TransactTo::Create,
+                },
+                value: tx.value,
+                data: tx.input.clone(),
+                nonce: Some(tx.nonce),
+                chain_id: tx.chain_id,
+                access_list: tx
+                    .access_list
+                    .clone()
+                    .map(|value| {
+                        value
+                            .0
+                            .iter()
+                            .map(|item| {
+                                (
+                                    item.address,
+                                    item.storage_keys
+                                        .iter()
+                                        .map(|k| U256::from_be_slice(k.to_vec().as_slice()))
+                                        .collect(),
+                                )
+                            })
+                            .collect()
+                    })
+                    .unwrap_or_default(),
+                gas_priority_fee: tx.max_priority_fee_per_gas.map(U256::from),
+                blob_hashes: tx.blob_versioned_hashes.clone().unwrap_or_default(),
+                max_fee_per_blob_gas: tx.max_fee_per_blob_gas.map(U256::from),
+                eof_initcodes: vec![],
+                eof_initcodes_hashed: HashMap::default(),
+            })
+            .build();
+        evm.transact_commit().unwrap();
+        (db, _) = evm.into_db_and_env_with_handler_cfg();
+    }
 }
 
 fn print_exec_result(result: ExecutionResult, initial_gas_spend: u64) {

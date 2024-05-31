@@ -14,6 +14,8 @@ pub struct Args {
     pub code: Option<String>,
     #[arg(long)]
     pub to: Option<Address>,
+    #[arg(long)]
+    pub block: Option<u64>,
     // Context Parameters
     #[arg(long)]
     pub from: Option<Address>,

@@ -13,5 +13,8 @@ revm = { version = "9.0.0", features = [
 ] }
 anyhow = "1.0.83"
 tokio = { version = "1.37", features = ["rt-multi-thread", "macros"] }
+ethers-core = { version = "2.0" }
 ethers-providers = { version = "2.0" }
 clap = { version = "4.5.4", features = ["derive"] }
+alloy-provider = { git = "https://github.com/alloy-rs/alloy.git", rev = "44b8a6d" }
+reqwest = { version = "0.12" }
