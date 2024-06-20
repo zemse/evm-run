@@ -33,7 +33,7 @@ gasUsed : 24
 ### Run pseudo code
 
 ```
-$ evm-run --code 'push1 2 push1 3 add stop'
+$ evm-run --code 'push1 02 push1 03 add stop'
 code 600260030100
 60 PUSH1
 60 PUSH1 Stack: 2

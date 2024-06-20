@@ -152,7 +152,7 @@ pub async fn run_block(
         let mut evm = Evm::builder()
             // .modify_cfg_env(|f| f.disable_eip3607 = true)
             .with_db(db)
-            .with_external_context(CustomTracer::new(&progress_bar, &mut tx_outcome)) // TODO change
+            .with_external_context(CustomTracer::new(&mut tx_outcome)) // TODO change
             .append_handler_register(inspector_handle_register)
             .with_block_env(block_env.clone())
             .with_tx_env(TxEnv {

@@ -1,9 +1,3 @@
-use std::{
-    borrow::{Borrow, BorrowMut},
-    default,
-};
-
-use indicatif::ProgressBar;
 use revm::{
     interpreter::{CallInputs, CallOutcome, Interpreter, OpCode},
     Database, EvmContext, Inspector,
@@ -15,7 +9,6 @@ pub struct CustomTracer<'a> {
     print: bool,
     depth: usize,
     op_length_max: usize,
-    progress_bar: Option<&'a ProgressBar>,
     result: Option<&'a mut CustomTracerResult>,
 }
 
@@ -30,20 +23,15 @@ impl<'a> CustomTracer<'a> {
             print: true,
             depth: 0,
             op_length_max: 0,
-            progress_bar: None,
             result: None,
         }
     }
 
-    pub fn new(
-        progress_bar: &'a ProgressBar,
-        result: &'a mut CustomTracerResult,
-    ) -> CustomTracer<'a> {
+    pub fn new(result: &'a mut CustomTracerResult) -> CustomTracer<'a> {
         CustomTracer {
             print: false,
             depth: 0,
             op_length_max: 0,
-            progress_bar: Some(progress_bar),
             result: Some(result),
         }
     }
@@ -59,8 +47,6 @@ impl<'a, DB: Database> Inspector<DB> for CustomTracer<'a> {
             if opcode_str.len() > self.op_length_max {
                 self.op_length_max = opcode_str.len();
             }
-
-            // some_opcode.map(|op| op.gas)
 
             print!(
                 "{opcode_num:0>2x} {opcode_str:pad_length$}",
@@ -109,9 +95,9 @@ impl<'a, DB: Database> Inspector<DB> for CustomTracer<'a> {
         let _ = inputs;
         self.depth -= 1;
         if self.depth == 0 {
-            // println!("Tx ended with {:?}", outcome.gas());
-            let mut value = self.result.as_mut().unwrap();
-            value.outcome = Some(outcome.clone());
+            if let Some(value) = self.result.as_mut() {
+                value.outcome = Some(outcome.clone());
+            }
         }
         outcome
     }
