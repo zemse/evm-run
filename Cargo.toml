@@ -18,3 +18,4 @@ ethers-providers = { version = "2.0" }
 clap = { version = "4.5.4", features = ["derive"] }
 alloy-provider = { git = "https://github.com/alloy-rs/alloy.git", rev = "44b8a6d" }
 reqwest = { version = "0.12" }
+indicatif = "0.17.8"

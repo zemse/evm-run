@@ -1,6 +1,10 @@
-use crate::{cli, inspector::CustomTracer};
+use crate::{
+    cli,
+    inspector::{CustomTracer, CustomTracerResult},
+};
 use alloy_provider::{Provider as ProviderTrait, ProviderBuilder};
 use ethers_providers::{Http, Provider};
+use indicatif::ProgressBar;
 use revm::{
     db::{CacheDB, EthersDB},
     inspector_handle_register,
@@ -140,12 +144,15 @@ pub async fn run_block(
         }),
     };
 
-    for tx in block.transactions.as_transactions().unwrap() {
-        println!("running tx {:?}", tx);
+    let progress_bar = ProgressBar::new(block.header.gas_used as u64);
+
+    for tx in block.transactions.as_transactions().unwrap_or_default() {
+        // println!("running tx {:?}", tx);
+        let mut tx_outcome = CustomTracerResult::default();
         let mut evm = Evm::builder()
             // .modify_cfg_env(|f| f.disable_eip3607 = true)
             .with_db(db)
-            .with_external_context(CustomTracer::default()) // TODO change
+            .with_external_context(CustomTracer::new(&progress_bar, &mut tx_outcome)) // TODO change
             .append_handler_register(inspector_handle_register)
             .with_block_env(block_env.clone())
             .with_tx_env(TxEnv {
@@ -188,6 +195,7 @@ pub async fn run_block(
             .build();
         evm.transact_commit().unwrap();
         (db, _) = evm.into_db_and_env_with_handler_cfg();
+        progress_bar.inc(tx_outcome.outcome.unwrap().gas().spent());
     }
 }
 
