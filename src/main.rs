@@ -28,20 +28,19 @@ async fn main() -> Result<()> {
         }
         let client = Provider::<Http>::try_from(args.rpc.clone().unwrap())?;
         let client = Arc::new(client);
-        let db: CacheDB<EthersDB<Provider<Http>>> = CacheDB::new(
-            EthersDB::new(Arc::clone(&client), args.block.map(|n| (n - 1).into())).unwrap(),
-        );
-        println!("running block");
-        evm::run_block(db, args.block.unwrap(), &args).await;
+        let ext_db =
+            EthersDB::new(Arc::clone(&client), args.block.map(|n| (n - 1).into())).unwrap();
+        println!("running block {}", args.block.unwrap());
+        evm::run_block(ext_db, args.block.unwrap(), &args).await;
     } else if let Some(rpc) = &args.rpc {
         let client = Provider::<Http>::try_from(rpc)?;
         let client = Arc::new(client);
         let db: CacheDB<EthersDB<Provider<Http>>> =
             CacheDB::new(EthersDB::new(Arc::clone(&client), args.block.map(|b| b.into())).unwrap());
-        evm::run(db, &args)?;
+        evm::run_tx(db, &args)?;
     } else {
         let db = CacheDB::new(EmptyDB::new());
-        evm::run(db, &args)?;
+        evm::run_tx(db, &args)?;
     };
 
     Ok(())
