@@ -17,8 +17,8 @@ pub struct CustomTracerResult {
     pub outcome: Option<CallOutcome>,
 }
 
-impl<'a> CustomTracer<'a> {
-    pub fn default() -> CustomTracer<'a> {
+impl<'a> Default for CustomTracer<'a> {
+    fn default() -> Self {
         CustomTracer {
             print: true,
             depth: 0,
@@ -26,7 +26,9 @@ impl<'a> CustomTracer<'a> {
             result: None,
         }
     }
+}
 
+impl<'a> CustomTracer<'a> {
     pub fn new(result: &'a mut CustomTracerResult) -> CustomTracer<'a> {
         CustomTracer {
             print: false,

@@ -1,12 +1,7 @@
-mod cli;
-mod code;
-mod evm;
-mod inspector;
-mod stack_fmt;
-
 use anyhow::Result;
 use clap::Parser;
 use ethers_providers::{Http, Provider};
+use evm_run::cli;
 use revm::db::{CacheDB, EmptyDB, EthersDB};
 use std::sync::Arc;
 
@@ -31,16 +26,16 @@ async fn main() -> Result<()> {
         let ext_db =
             EthersDB::new(Arc::clone(&client), args.block.map(|n| (n - 1).into())).unwrap();
         println!("running block {}", args.block.unwrap());
-        evm::run_block(ext_db, args.block.unwrap(), &args).await;
+        evm_run::block(ext_db, args.block.unwrap(), &args).await;
     } else if let Some(rpc) = &args.rpc {
         let client = Provider::<Http>::try_from(rpc)?;
         let client = Arc::new(client);
         let db: CacheDB<EthersDB<Provider<Http>>> =
             CacheDB::new(EthersDB::new(Arc::clone(&client), args.block.map(|b| b.into())).unwrap());
-        evm::run_tx(db, &args)?;
+        evm_run::tx(db, &args)?;
     } else {
         let db = CacheDB::new(EmptyDB::new());
-        evm::run_tx(db, &args)?;
+        evm_run::tx(db, &args)?;
     };
 
     Ok(())

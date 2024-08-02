@@ -39,7 +39,7 @@ where
                     balance: U256::ZERO,
                     nonce: 1,
                     code_hash: keccak256(&code),
-                    code: Some(revm::primitives::Bytecode::LegacyRaw(code)),
+                    code: Some(revm::primitives::Bytecode::new_raw(code)),
                 },
             )
         })

@@ -14,7 +14,7 @@ use revm::{
     Database, DatabaseCommit, DatabaseRef, Evm,
 };
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, marker::PhantomData, str::FromStr};
+use std::{collections::HashMap, str::FromStr};
 
 pub async fn run_block<ExtDB>(db: ExtDB, block_num: u64, args: &cli::Args)
 where
@@ -106,8 +106,8 @@ where
 
 #[derive(Serialize, Deserialize)]
 pub struct RecorderDB<ExtDB: DatabaseRef> {
-    pub init_db: CacheDB<ErrorDB>,
-    pub running_db: CacheDB<ErrorDB>,
+    pub init_db: CacheDB<VoidDB>,
+    pub running_db: CacheDB<VoidDB>,
     pub ext_db: ExtDB,
     pub path: String,
 }
@@ -121,10 +121,10 @@ impl<ExtDB: DatabaseRef> DatabaseCommit for RecorderDB<ExtDB> {
 
 impl<ExtDB: DatabaseRef> RecorderDB<ExtDB> {
     pub fn new(ext_db: ExtDB, path: String) -> Self {
-        let init_db = Self::load(&path).unwrap_or_else(CacheDB::<ErrorDB>::default);
+        let init_db = Self::load(&path).unwrap_or_else(CacheDB::<VoidDB>::default);
         Self {
             init_db,
-            running_db: CacheDB::<ErrorDB>::default(),
+            running_db: CacheDB::<VoidDB>::default(),
             ext_db,
             path,
         }
@@ -135,7 +135,7 @@ impl<ExtDB: DatabaseRef> RecorderDB<ExtDB> {
         std::fs::write(self.path.clone(), buff).expect("write failed");
     }
 
-    fn load(path: &String) -> Option<CacheDB<ErrorDB>> {
+    fn load(path: &String) -> Option<CacheDB<VoidDB>> {
         if let Ok(buff) = std::fs::read(path) {
             bincode::deserialize(&buff).ok()
         } else {
@@ -248,35 +248,36 @@ impl<ExtDB: DatabaseRef> Database for RecorderDB<ExtDB> {
     }
 }
 
-pub type ErrorDB = ErrorDBTyped<()>;
-
-/// DB that always returns an error.
 #[derive(Serialize, Deserialize, Default, Debug)]
-pub struct ErrorDBTyped<E> {
-    _phantom: PhantomData<E>,
+pub struct VoidDB;
+
+pub enum VoidError {
+    AddressNotInDB(Address),
+    ContractNotInDB(B256),
+    StorageNotInDB(Address, U256),
+    BlockHashNotInDB(U256),
 }
 
-impl<E> DatabaseRef for ErrorDBTyped<E> {
-    #[doc = " The database error type."]
-    type Error = ();
+impl DatabaseRef for VoidDB {
+    type Error = VoidError;
 
-    #[doc = " Get basic account information."]
-    fn basic_ref(&self, _: Address) -> Result<Option<AccountInfo>, Self::Error> {
-        Err(())
+    #[inline]
+    fn basic_ref(&self, address: Address) -> Result<Option<AccountInfo>, Self::Error> {
+        Err(VoidError::AddressNotInDB(address))
     }
 
-    #[doc = " Get account code by its hash."]
-    fn code_by_hash_ref(&self, _: B256) -> Result<Bytecode, Self::Error> {
-        Err(())
+    #[inline]
+    fn code_by_hash_ref(&self, code_hash: B256) -> Result<Bytecode, Self::Error> {
+        Err(VoidError::ContractNotInDB(code_hash))
     }
 
-    #[doc = " Get storage value of address at index."]
-    fn storage_ref(&self, _: Address, _: U256) -> Result<U256, Self::Error> {
-        Err(())
+    #[inline]
+    fn storage_ref(&self, address: Address, index: U256) -> Result<U256, Self::Error> {
+        Err(VoidError::StorageNotInDB(address, index))
     }
 
-    #[doc = " Get block hash by block number."]
-    fn block_hash_ref(&self, _: U256) -> Result<B256, Self::Error> {
-        Err(())
+    #[inline]
+    fn block_hash_ref(&self, number: U256) -> Result<B256, Self::Error> {
+        Err(VoidError::BlockHashNotInDB(number))
     }
 }
