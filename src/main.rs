@@ -26,7 +26,7 @@ async fn main() -> Result<()> {
         let ext_db =
             EthersDB::new(Arc::clone(&client), args.block.map(|n| (n - 1).into())).unwrap();
         println!("running block {}", args.block.unwrap());
-        evm_run::block(ext_db, args.block.unwrap(), &args).await;
+        evm_run::block(ext_db, args.block.unwrap(), args.rpc.unwrap().as_str()).await;
     } else if let Some(rpc) = &args.rpc {
         let client = Provider::<Http>::try_from(rpc)?;
         let client = Arc::new(client);

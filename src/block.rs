@@ -1,7 +1,4 @@
-use crate::{
-    cli,
-    inspector::{CustomTracer, CustomTracerResult},
-};
+use crate::inspector::{CustomTracer, CustomTracerResult};
 use alloy_provider::{Provider as ProviderTrait, ProviderBuilder};
 use indicatif::ProgressBar;
 use revm::{
@@ -16,15 +13,18 @@ use revm::{
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, str::FromStr};
 
-pub async fn run_block<ExtDB>(db: ExtDB, block_num: u64, args: &cli::Args)
+pub async fn run_block<ExtDB>(
+    db: ExtDB,
+    block_num: u64,
+    rpc: &str,
+) -> (BlockEnv, Vec<TxEnv>, CacheDB<VoidDB>)
 where
     ExtDB: DatabaseRef,
     <ExtDB as revm::DatabaseRef>::Error: std::fmt::Debug,
 {
-    let mut db = RecorderDB::new(db, format!("block_{block_num}.data"));
+    let mut db = RecorderDB::new(db, format!("block_{block_num}.db"));
 
-    let provider =
-        ProviderBuilder::new().on_http(reqwest::Url::from_str(&args.rpc.clone().unwrap()).unwrap());
+    let provider = ProviderBuilder::new().on_http(reqwest::Url::from_str(rpc).unwrap());
 
     let block = provider
         .get_block(block_num.into(), true)
@@ -51,7 +51,48 @@ where
 
     let progress_bar = ProgressBar::new(block.header.gas_used as u64);
 
+    let mut tx_vec = vec![];
+
     for tx in block.transactions.as_transactions().unwrap_or_default() {
+        let tx = TxEnv {
+            caller: tx.from,
+            gas_limit: tx.gas as u64,
+            gas_price: U256::from(tx.gas_price.unwrap_or_default()),
+            transact_to: match tx.to {
+                Some(addr) => TransactTo::Call(addr),
+                None => TransactTo::Create,
+            },
+            value: tx.value,
+            data: tx.input.clone(),
+            nonce: Some(tx.nonce),
+            chain_id: tx.chain_id,
+            access_list: tx
+                .access_list
+                .clone()
+                .map(|value| {
+                    value
+                        .0
+                        .iter()
+                        .map(|item| {
+                            (
+                                item.address,
+                                item.storage_keys
+                                    .iter()
+                                    .map(|k| U256::from_be_slice(k.to_vec().as_slice()))
+                                    .collect(),
+                            )
+                        })
+                        .collect()
+                })
+                .unwrap_or_default(),
+            gas_priority_fee: tx.max_priority_fee_per_gas.map(U256::from),
+            blob_hashes: tx.blob_versioned_hashes.clone().unwrap_or_default(),
+            max_fee_per_blob_gas: tx.max_fee_per_blob_gas.map(U256::from),
+            eof_initcodes: vec![],
+            eof_initcodes_hashed: HashMap::default(),
+        };
+        tx_vec.push(tx.clone());
+
         // println!("running tx {:?} {:?} {}", tx.hash, tx.from, tx.nonce);
         let mut tx_outcome = CustomTracerResult::default();
         let mut evm = Evm::builder()
@@ -60,48 +101,14 @@ where
             .with_external_context(CustomTracer::new(&mut tx_outcome)) // TODO change
             .append_handler_register(inspector_handle_register)
             .with_block_env(block_env.clone())
-            .with_tx_env(TxEnv {
-                caller: tx.from,
-                gas_limit: tx.gas as u64,
-                gas_price: U256::from(tx.gas_price.unwrap_or_default()),
-                transact_to: match tx.to {
-                    Some(addr) => TransactTo::Call(addr),
-                    None => TransactTo::Create,
-                },
-                value: tx.value,
-                data: tx.input.clone(),
-                nonce: Some(tx.nonce),
-                chain_id: tx.chain_id,
-                access_list: tx
-                    .access_list
-                    .clone()
-                    .map(|value| {
-                        value
-                            .0
-                            .iter()
-                            .map(|item| {
-                                (
-                                    item.address,
-                                    item.storage_keys
-                                        .iter()
-                                        .map(|k| U256::from_be_slice(k.to_vec().as_slice()))
-                                        .collect(),
-                                )
-                            })
-                            .collect()
-                    })
-                    .unwrap_or_default(),
-                gas_priority_fee: tx.max_priority_fee_per_gas.map(U256::from),
-                blob_hashes: tx.blob_versioned_hashes.clone().unwrap_or_default(),
-                max_fee_per_blob_gas: tx.max_fee_per_blob_gas.map(U256::from),
-                eof_initcodes: vec![],
-                eof_initcodes_hashed: HashMap::default(),
-            })
+            .with_tx_env(tx)
             .build();
         evm.transact_commit().unwrap();
         (db, _) = evm.into_db_and_env_with_handler_cfg();
         progress_bar.inc(tx_outcome.outcome.unwrap().gas().spent());
     }
+
+    (block_env, tx_vec, db.init_db)
 }
 
 #[derive(Serialize, Deserialize)]

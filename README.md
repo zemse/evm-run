@@ -72,3 +72,5 @@ evm-run --block 20132136 --rpc https://eth-mainnet.g.alchemy.com/v2/<API-KEY>
 running block
 ████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 1589329/12195104
 ```
+
+Generates and stores a partial state trie in `block_20132136.db`. This is just enough to execute the block.
