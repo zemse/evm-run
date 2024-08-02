@@ -5,5 +5,7 @@ pub mod inspector;
 pub mod stack_fmt;
 mod tx;
 
+pub use revm;
+
 pub use block::{run_block as block, *};
 pub use tx::{run_tx as tx, *};
