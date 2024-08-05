@@ -54,7 +54,7 @@ where
     let mut tx_vec = vec![];
 
     for tx in block.transactions.as_transactions().unwrap_or_default() {
-        let tx = TxEnv {
+        let tx_env = TxEnv {
             caller: tx.from,
             gas_limit: tx.gas as u64,
             gas_price: U256::from(tx.gas_price.unwrap_or_default()),
@@ -91,7 +91,7 @@ where
             eof_initcodes: vec![],
             eof_initcodes_hashed: HashMap::default(),
         };
-        tx_vec.push(tx.clone());
+        tx_vec.push(tx_env.clone());
 
         // println!("running tx {:?} {:?} {}", tx.hash, tx.from, tx.nonce);
         let mut tx_outcome = CustomTracerResult::default();
@@ -101,11 +101,11 @@ where
             .with_external_context(CustomTracer::new(&mut tx_outcome)) // TODO change
             .append_handler_register(inspector_handle_register)
             .with_block_env(block_env.clone())
-            .with_tx_env(tx)
+            .with_tx_env(tx_env)
             .build();
         evm.transact_commit().unwrap();
         (db, _) = evm.into_db_and_env_with_handler_cfg();
-        progress_bar.inc(tx_outcome.outcome.unwrap().gas().spent());
+        progress_bar.inc(tx_outcome.interpreter_result.unwrap().gas.spent());
     }
 
     (block_env, tx_vec, db.init_db)

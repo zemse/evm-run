@@ -1,5 +1,8 @@
 use revm::{
-    interpreter::{CallInputs, CallOutcome, Interpreter, OpCode},
+    interpreter::{
+        CallInputs, CallOutcome, CreateInputs, CreateOutcome, Interpreter, InterpreterResult,
+        OpCode,
+    },
     Database, EvmContext, Inspector,
 };
 
@@ -14,7 +17,7 @@ pub struct CustomTracer<'a> {
 
 #[derive(Default)]
 pub struct CustomTracerResult {
-    pub outcome: Option<CallOutcome>,
+    pub interpreter_result: Option<InterpreterResult>,
 }
 
 impl<'a> Default for CustomTracer<'a> {
@@ -98,7 +101,41 @@ impl<'a, DB: Database> Inspector<DB> for CustomTracer<'a> {
         self.depth -= 1;
         if self.depth == 0 {
             if let Some(value) = self.result.as_mut() {
-                value.outcome = Some(outcome.clone());
+                value.interpreter_result = Some(outcome.result.clone());
+            }
+        }
+        outcome
+    }
+
+    #[inline]
+    fn create(
+        &mut self,
+        context: &mut EvmContext<DB>,
+        inputs: &mut CreateInputs,
+    ) -> Option<CreateOutcome> {
+        let _ = context;
+        let _ = inputs;
+        self.depth += 1;
+        None
+    }
+
+    /// Called when a contract has been created.
+    ///
+    /// InstructionResulting anything other than the values passed to this function (`(ret, remaining_gas,
+    /// address, out)`) will alter the result of the create.
+    #[inline]
+    fn create_end(
+        &mut self,
+        context: &mut EvmContext<DB>,
+        inputs: &CreateInputs,
+        outcome: CreateOutcome,
+    ) -> CreateOutcome {
+        let _ = context;
+        let _ = inputs;
+        self.depth -= 1;
+        if self.depth == 0 {
+            if let Some(value) = self.result.as_mut() {
+                value.interpreter_result = Some(outcome.result.clone());
             }
         }
         outcome
